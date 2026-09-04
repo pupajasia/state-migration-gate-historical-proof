@@ -1,0 +1,169 @@
+name: Desktop Upgrade State Gate
+description: Block a Windows desktop release when persisted state changes meaning across a packaged upgrade.
+inputs:
+  config:
+    description: Repository-relative path to the versioned JSON state contract.
+    required: false
+    default: state-gate.json
+  output:
+    description: Repository-relative directory for reports, logs, evidence and isolated profiles.
+    required: false
+    default: .state-gate-results
+  previous-artifact:
+    description: Existing repository-relative old artifact; mutually exclusive with previous-repo.
+    required: false
+    default: ''
+  previous-repo:
+    description: GitHub owner/repository containing the previous shipped artifact.
+    required: false
+    default: ''
+  previous-release:
+    description: Explicit previous release tag; latest is rejected.
+    required: false
+    default: ''
+  previous-asset-name:
+    description: Exact release asset name; mutually exclusive with previous-asset-regex.
+    required: false
+    default: ''
+  previous-asset-regex:
+    description: Full-match regex selecting exactly one release asset.
+    required: false
+    default: ''
+  previous-sha256:
+    description: Required SHA-256 pin for the previous artifact.
+    required: true
+  candidate-artifact:
+    description: Repository-relative path to the already-built candidate artifact.
+    required: true
+  candidate-sha256:
+    description: Optional expected SHA-256 for the candidate; the actual hash is always reported.
+    required: false
+    default: ''
+outputs:
+  verdict:
+    description: pass or fail; action exits non-zero for fail or infrastructure error.
+    value: ${{ steps.gate.outputs.verdict }}
+  report:
+    description: Absolute path to the generated JSON report.
+    value: ${{ steps.gate.outputs.report }}
+  previous-artifact:
+    description: Absolute path to the verified previous artifact used by the gate.
+    value: ${{ steps.gate.outputs.previous_artifact }}
+  previous-sha256:
+    description: Verified SHA-256 of the previous artifact.
+    value: ${{ steps.gate.outputs.previous_sha256 }}
+  previous-receipt:
+    description: Release receipt path when previous-repo was used; empty for an existing artifact.
+    value: ${{ steps.gate.outputs.previous_receipt }}
+  candidate-artifact:
+    description: Absolute path to the candidate artifact used by the gate.
+    value: ${{ steps.gate.outputs.candidate_artifact }}
+  candidate-sha256:
+    description: Computed and optionally pin-verified SHA-256 of the candidate artifact.
+    value: ${{ steps.gate.outputs.candidate_sha256 }}
+runs:
+  using: composite
+  steps:
+    - name: Validate pinned Windows action inputs
+      id: preflight
+      shell: pwsh
+      env:
+        STATE_GATE_CONFIG: ${{ inputs.config }}
+        STATE_GATE_OUTPUT: ${{ inputs.output }}
+        STATE_GATE_PREVIOUS_ARTIFACT: ${{ inputs.previous-artifact }}
+        STATE_GATE_PREVIOUS_REPO: ${{ inputs.previous-repo }}
+        STATE_GATE_PREVIOUS_RELEASE: ${{ inputs.previous-release }}
+        STATE_GATE_PREVIOUS_ASSET_NAME: ${{ inputs.previous-asset-name }}
+        STATE_GATE_PREVIOUS_ASSET_REGEX: ${{ inputs.previous-asset-regex }}
+        STATE_GATE_PREVIOUS_SHA256: ${{ inputs.previous-sha256 }}
+        STATE_GATE_CANDIDATE_ARTIFACT: ${{ inputs.candidate-artifact }}
+        STATE_GATE_CANDIDATE_SHA256: ${{ inputs.candidate-sha256 }}
+      run: |
+        $arguments = @(
+          "$env:GITHUB_ACTION_PATH/action_preflight.py",
+          '--workspace', $env:GITHUB_WORKSPACE,
+          '--runner-os', $env:RUNNER_OS,
+          '--config', $env:STATE_GATE_CONFIG,
+          '--output', $env:STATE_GATE_OUTPUT,
+          '--previous-artifact', $env:STATE_GATE_PREVIOUS_ARTIFACT,
+          '--previous-repo', $env:STATE_GATE_PREVIOUS_REPO,
+          '--previous-release', $env:STATE_GATE_PREVIOUS_RELEASE,
+          '--previous-asset-name', $env:STATE_GATE_PREVIOUS_ASSET_NAME,
+          '--previous-asset-regex', $env:STATE_GATE_PREVIOUS_ASSET_REGEX,
+          '--previous-sha256', $env:STATE_GATE_PREVIOUS_SHA256,
+          '--candidate-artifact', $env:STATE_GATE_CANDIDATE_ARTIFACT,
+          '--candidate-sha256', $env:STATE_GATE_CANDIDATE_SHA256
+        )
+        python @arguments
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Download the pinned previous GitHub release artifact
+      id: previous_release
+      if: ${{ steps.preflight.outputs.download_required == 'true' }}
+      shell: pwsh
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        STATE_GATE_PREVIOUS_REPO: ${{ inputs.previous-repo }}
+        STATE_GATE_PREVIOUS_RELEASE: ${{ inputs.previous-release }}
+        STATE_GATE_PREVIOUS_ASSET_NAME: ${{ inputs.previous-asset-name }}
+        STATE_GATE_PREVIOUS_ASSET_REGEX: ${{ inputs.previous-asset-regex }}
+        STATE_GATE_PREVIOUS_SHA256: ${{ steps.preflight.outputs.previous_sha256 }}
+      run: |
+        $downloadRoot = Join-Path $env:RUNNER_TEMP ("state-gate-" + [guid]::NewGuid().ToString('N'))
+        $receipt = Join-Path $downloadRoot 'previous-release-receipt.json'
+        $arguments = @(
+          "$env:GITHUB_ACTION_PATH/github_release_artifact.py",
+          '--repo', $env:STATE_GATE_PREVIOUS_REPO,
+          '--release', $env:STATE_GATE_PREVIOUS_RELEASE,
+          '--download',
+          '--output', $downloadRoot,
+          '--receipt', $receipt,
+          '--sha256', $env:STATE_GATE_PREVIOUS_SHA256
+        )
+        if ($env:STATE_GATE_PREVIOUS_ASSET_NAME) {
+          $arguments += @('--name', $env:STATE_GATE_PREVIOUS_ASSET_NAME)
+        } else {
+          $arguments += @('--regex', $env:STATE_GATE_PREVIOUS_ASSET_REGEX)
+        }
+        python @arguments
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        "receipt=$receipt" >> $env:GITHUB_OUTPUT
+
+    - name: Seed old state and verify the candidate
+      id: gate
+      shell: pwsh
+      env:
+        STATE_GATE_CONFIG: ${{ steps.preflight.outputs.config }}
+        STATE_GATE_OUTPUT: ${{ steps.preflight.outputs.output }}
+        STATE_GATE_LOCAL_PREVIOUS: ${{ steps.preflight.outputs.previous_artifact }}
+        STATE_GATE_DOWNLOADED_PREVIOUS: ${{ steps.previous_release.outputs.path }}
+        STATE_GATE_LOCAL_PREVIOUS_SHA: ${{ steps.preflight.outputs.previous_sha256 }}
+        STATE_GATE_DOWNLOADED_PREVIOUS_SHA: ${{ steps.previous_release.outputs.sha256 }}
+        STATE_GATE_PREVIOUS_RECEIPT: ${{ steps.previous_release.outputs.receipt }}
+        STATE_GATE_CANDIDATE_ARTIFACT: ${{ steps.preflight.outputs.candidate_artifact }}
+        STATE_GATE_CANDIDATE_SHA256: ${{ steps.preflight.outputs.candidate_sha256 }}
+      run: |
+        $previousArtifact = $env:STATE_GATE_LOCAL_PREVIOUS
+        $previousSha = $env:STATE_GATE_LOCAL_PREVIOUS_SHA
+        if ($env:STATE_GATE_DOWNLOADED_PREVIOUS) {
+          $previousArtifact = $env:STATE_GATE_DOWNLOADED_PREVIOUS
+          $previousSha = $env:STATE_GATE_DOWNLOADED_PREVIOUS_SHA
+        }
+        if (-not $previousArtifact) { throw 'preflight produced no previous artifact' }
+
+        python "$env:GITHUB_ACTION_PATH/state_gate.py" `
+          --config $env:STATE_GATE_CONFIG `
+          --output $env:STATE_GATE_OUTPUT `
+          --var "previous_artifact=$previousArtifact" `
+          --var "candidate_artifact=$env:STATE_GATE_CANDIDATE_ARTIFACT"
+        $gateExit = $LASTEXITCODE
+
+        "previous_artifact=$previousArtifact" >> $env:GITHUB_OUTPUT
+        "previous_sha256=$previousSha" >> $env:GITHUB_OUTPUT
+        "previous_receipt=$env:STATE_GATE_PREVIOUS_RECEIPT" >> $env:GITHUB_OUTPUT
+        "candidate_artifact=$env:STATE_GATE_CANDIDATE_ARTIFACT" >> $env:GITHUB_OUTPUT
+        "candidate_sha256=$env:STATE_GATE_CANDIDATE_SHA256" >> $env:GITHUB_OUTPUT
+        exit $gateExit
+branding:
+  icon: shield
+  color: blue

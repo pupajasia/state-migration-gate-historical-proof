@@ -1,0 +1,61 @@
+name: Founding pilot interest
+description: Voluntarily request a scoped discussion for one Windows migration path.
+title: "[pilot interest] "
+labels:
+  - pilot-interest
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This public form is an opt-in request for discussion, not an order. Share only non-confidential details. The current test price is EUR 149 net for one tightly scoped Windows old-to-candidate path, subject to written scope and acceptance before payment.
+  - type: input
+    id: product
+    attributes:
+      label: Public product or project
+      description: A public repository or product page is enough; do not attach binaries.
+    validations:
+      required: true
+  - type: dropdown
+    id: packaging
+    attributes:
+      label: Windows packaging
+      options:
+        - Portable executable
+        - Installer
+        - MSIX
+        - Electron package
+        - Other public packaging
+    validations:
+      required: true
+  - type: input
+    id: path
+    attributes:
+      label: One version path to prove
+      placeholder: v1.8.4 to the next candidate
+    validations:
+      required: true
+  - type: textarea
+    id: semantics
+    attributes:
+      label: Persisted-state risk
+      description: Describe the user-visible meaning that must survive, without customer data.
+    validations:
+      required: true
+  - type: dropdown
+    id: budget
+    attributes:
+      label: Pilot price test
+      description: This records price fit only; it does not create a purchase.
+      options:
+        - EUR 149 net is acceptable if scope fits
+        - I need a scope discussion before deciding
+        - This price is not acceptable
+    validations:
+      required: true
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Follow-up permission
+      options:
+        - label: I am voluntarily asking the repository owner to reply to this issue about this pilot request.
+          required: true

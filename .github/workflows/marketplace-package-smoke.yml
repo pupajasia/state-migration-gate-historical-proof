@@ -1,0 +1,105 @@
+name: Marketplace package smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  composite-action:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+
+      - name: Validate engine and package sources
+        shell: pwsh
+        run: |
+          python -m unittest -v test_action_preflight.py test_github_release_artifact.py test_state_gate.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m py_compile action_preflight.py state_gate.py github_release_artifact.py fixtures/action-smoke/adapter.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --check adapters/beekeeper/upgrade_adapter.mjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python state_gate.py --config fixtures/action-smoke/state-gate.json --validate-only
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Pin the tiny fixture artifacts
+        id: fixture
+        shell: pwsh
+        run: |
+          "old_sha=$((Get-FileHash -Algorithm SHA256 -LiteralPath 'fixtures/action-smoke/old.bin').Hash.ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "good_sha=$((Get-FileHash -Algorithm SHA256 -LiteralPath 'fixtures/action-smoke/candidate-good.bin').Hash.ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "bad_sha=$((Get-FileHash -Algorithm SHA256 -LiteralPath 'fixtures/action-smoke/candidate-bad.bin').Hash.ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+      - name: Action passes retained semantic state
+        id: good
+        uses: ./
+        with:
+          config: fixtures/action-smoke/state-gate.json
+          output: .state-gate-results/good
+          previous-artifact: fixtures/action-smoke/old.bin
+          previous-sha256: ${{ steps.fixture.outputs.old_sha }}
+          candidate-artifact: fixtures/action-smoke/candidate-good.bin
+          candidate-sha256: ${{ steps.fixture.outputs.good_sha }}
+
+      - name: Check public outputs from the passing action
+        shell: pwsh
+        env:
+          VERDICT: ${{ steps.good.outputs.verdict }}
+          REPORT: ${{ steps.good.outputs.report }}
+          OLD_SHA: ${{ steps.good.outputs.previous-sha256 }}
+          CANDIDATE_SHA: ${{ steps.good.outputs.candidate-sha256 }}
+        run: |
+          if ($env:VERDICT -ne 'pass') { throw "Expected pass output, got $env:VERDICT" }
+          if (-not (Test-Path -LiteralPath $env:REPORT -PathType Leaf)) { throw 'Passing report output is missing' }
+          if ($env:OLD_SHA -ne '${{ steps.fixture.outputs.old_sha }}') { throw 'Previous SHA output mismatch' }
+          if ($env:CANDIDATE_SHA -ne '${{ steps.fixture.outputs.good_sha }}') { throw 'Candidate SHA output mismatch' }
+
+      - name: Action blocks silently changed semantic state
+        id: bad
+        continue-on-error: true
+        uses: ./
+        with:
+          config: fixtures/action-smoke/state-gate.json
+          output: .state-gate-results/bad
+          previous-artifact: fixtures/action-smoke/old.bin
+          previous-sha256: ${{ steps.fixture.outputs.old_sha }}
+          candidate-artifact: fixtures/action-smoke/candidate-bad.bin
+          candidate-sha256: ${{ steps.fixture.outputs.bad_sha }}
+
+      - name: Check the expected closed failure
+        if: always()
+        shell: pwsh
+        env:
+          OUTCOME: ${{ steps.bad.outcome }}
+          VERDICT: ${{ steps.bad.outputs.verdict }}
+          REPORT: ${{ steps.bad.outputs.report }}
+        run: |
+          if ($env:OUTCOME -ne 'failure') { throw "Expected failed action outcome, got $env:OUTCOME" }
+          if ($env:VERDICT -ne 'fail') { throw "Expected fail output, got $env:VERDICT" }
+          if (-not (Test-Path -LiteralPath $env:REPORT -PathType Leaf)) { throw 'Blocked report output is missing' }
+          $report = Get-Content -Raw -LiteralPath $env:REPORT | ConvertFrom-Json
+          if ($report.paths[0].attempts[0].verify_evidence.meaning -ne 'silently-changed') {
+            throw 'Blocked report did not retain the semantic witness'
+          }
+
+      - name: Retain smoke evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: marketplace-package-smoke-evidence
+          path: .state-gate-results
+          if-no-files-found: error
+          retention-days: 7

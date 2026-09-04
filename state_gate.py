@@ -16,6 +16,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 from typing import Any
@@ -345,10 +346,14 @@ def artifact_fingerprints(path_contract: dict[str, Any], contract_root: pathlib.
     for step_name in ("seed", "verify"):
         raw = path_contract[step_name]["command"][0]
         executable = pathlib.Path(raw)
-        if not executable.is_absolute():
+        if not executable.is_absolute() and ("/" in raw or "\\" in raw):
             executable = (contract_root / executable).resolve()
+        elif not executable.is_absolute():
+            resolved = shutil.which(raw)
+            executable = pathlib.Path(resolved).resolve() if resolved else executable
         result[step_name] = {
             "path": str(executable),
+            "exists": executable.is_file(),
             "sha256": sha256(executable),
         }
     return result

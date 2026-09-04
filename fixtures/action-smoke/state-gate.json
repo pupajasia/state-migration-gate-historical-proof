@@ -1,0 +1,48 @@
+{
+  "$schema": "../../state-gate.schema.json",
+  "contract_version": 1,
+  "project": "composite-action-smoke",
+  "fail_on_flaky": true,
+  "paths": [
+    {
+      "id": "old-to-candidate",
+      "from": "old-v1",
+      "to": "candidate",
+      "timeout_seconds": 20,
+      "retries": 0,
+      "seed": {
+        "command": [
+          "python",
+          "adapter.py",
+          "--mode",
+          "seed",
+          "--source-artifact",
+          "{previous_artifact}",
+          "--profile",
+          "{profile}",
+          "--evidence",
+          "{evidence}"
+        ]
+      },
+      "verify": {
+        "command": [
+          "python",
+          "adapter.py",
+          "--mode",
+          "verify",
+          "--source-artifact",
+          "{candidate_artifact}",
+          "--profile",
+          "{profile}",
+          "--evidence",
+          "{evidence}"
+        ]
+      },
+      "assertions": [
+        { "path": "passed", "op": "equals", "value": true },
+        { "path": "stable_id", "op": "equals", "value": "task-42" },
+        { "path": "meaning", "op": "equals", "value": "keep-me" }
+      ]
+    }
+  ]
+}

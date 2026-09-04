@@ -1,4 +1,5 @@
 .state-gate-artifacts/
+.state-gate-results/
 historical-evidence/
 node_modules/
 __pycache__/
