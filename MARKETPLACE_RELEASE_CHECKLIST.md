@@ -16,8 +16,9 @@ public state or create legal/commercial commitments.
 - [ ] GitHub parses the metadata and the Windows package workflow passes on the
       exact commit intended for release.
 - [ ] Repository owner selects and adds an explicit software license.
-- [ ] Add a third-party notice for dependencies actually installed or shipped;
-      do not bundle third-party application binaries, source, icons or plugins.
+- [x] Add and maintain a third-party notice for referenced dependencies and test
+      targets; do not bundle third-party application binaries, source, icons or
+      plugins.
 - [ ] Use only owned/synthetic launch media unless third-party UI and trademark
       use has a documented permission or legal basis.
 
