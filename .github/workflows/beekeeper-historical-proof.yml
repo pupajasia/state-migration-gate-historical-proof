@@ -38,7 +38,7 @@ jobs:
             --sha256 b3d4291008604519e29b7405557029f30ed49b0eaf0b53e8f9df7ffde9eaf92e `
             --download `
             --output .state-gate-artifacts\v5.8.1 `
-            --receipt .state-gate-artifacts\v5.8.1.json
+            --receipt release-receipts\v5.8.1.json
 
       - name: Resolve immutable v5.9.0 artifact
         shell: pwsh
@@ -50,7 +50,7 @@ jobs:
             --sha256 541dde78e10544ac60c9ab21a18f2ff5f8bfc6b85a6195bd1584d0f503823240 `
             --download `
             --output .state-gate-artifacts\v5.9.0 `
-            --receipt .state-gate-artifacts\v5.9.0.json
+            --receipt release-receipts\v5.9.0.json
 
       - name: Confirm the pre-fix same-version control is blocked
         shell: pwsh
@@ -111,7 +111,7 @@ jobs:
         with:
           name: beekeeper-historical-state-gate-evidence
           path: |
-            .state-gate-artifacts/*.json
+            release-receipts/*.json
             historical-evidence/**
             !historical-evidence/**/user-data/portable-application/Beekeeper-Studio.exe
             !historical-evidence/**/user-data/portable-application/beekeeper_studio_data/plugins/**
