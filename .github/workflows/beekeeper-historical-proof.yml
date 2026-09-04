@@ -61,9 +61,38 @@ jobs:
             --output .\historical-evidence\control `
             --var "previous_artifact=$oldArtifact" `
             --var "candidate_artifact=$oldArtifact"
-          if ($LASTEXITCODE -ne 1) {
-            throw "Expected semantic block (exit 1), received $LASTEXITCODE"
+          $gateExit = $LASTEXITCODE
+          if ($gateExit -ne 1) {
+            throw "Expected semantic block (exit 1), received $gateExit"
           }
+          $reports = @(Get-ChildItem -LiteralPath '.\historical-evidence\control' -Filter report.json -File -Recurse)
+          if ($reports.Count -ne 1) {
+            throw "Expected exactly one control report, found $($reports.Count)"
+          }
+          $report = Get-Content -LiteralPath $reports[0].FullName -Raw | ConvertFrom-Json
+          $attempt = $report.paths[0].attempts[0]
+          $seedEdits = @($attempt.seed_evidence.database.linked_tabs | Where-Object {
+            $_.unsavedChanges -eq 1 -and $_.unsavedQueryText -eq 'select 999 as retained_state_gate_edit;'
+          })
+          $comparison = $attempt.verify_evidence.semantic_comparison.checks
+          $controlChecks = [ordered]@{
+            overall_failed = $report.verdict -eq 'fail'
+            seed_was_clean = $attempt.seed.passed -and -not $attempt.seed.timed_out -and $null -eq $attempt.seed.launch_error
+            edited_state_was_seeded = $seedEdits.Count -eq 1
+            verify_was_clean = $attempt.verify.exit_code -eq 1 -and -not $attempt.verify.timed_out -and $null -eq $attempt.verify.launch_error
+            evidence_was_readable = $null -eq $attempt.evidence_error
+            edited_text_disappeared_from_ui = -not $attempt.verify_evidence.ui.restored_edit_visible
+            saved_text_replaced_the_edit_in_ui = -not $attempt.verify_evidence.ui.original_text_not_substituted
+            database_remained_readable = $comparison.database_integrity
+            saved_query_survived = $comparison.saved_query_identity -and $comparison.saved_query_meaning
+            edited_tab_meaning_was_lost = -not $comparison.edited_tab_meaning
+          }
+          $failedChecks = @($controlChecks.GetEnumerator() | Where-Object { -not $_.Value } | ForEach-Object Key)
+          if ($failedChecks.Count -gt 0) {
+            throw "Control did not demonstrate the expected historical state loss: $($failedChecks -join ', ')"
+          }
+          Write-Host 'Historical v5.8.1 control produced the expected semantic block.'
+          exit 0
 
       - name: Confirm v5.8.1 to v5.9.0 preserves the edited query
         shell: pwsh
