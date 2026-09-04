@@ -1,0 +1,12 @@
+{
+  "name": "state-gate-beekeeper-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@playwright/test": "1.44.0"
+  }
+}

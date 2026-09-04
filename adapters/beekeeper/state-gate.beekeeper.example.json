@@ -1,0 +1,48 @@
+{
+  "$schema": "../../state-gate.schema.json",
+  "contract_version": 1,
+  "project": "beekeeper-studio-portable-upgrade",
+  "fail_on_flaky": true,
+  "paths": [
+    {
+      "id": "previous-portable-to-candidate-portable",
+      "from": "explicit previous stable tag",
+      "to": "candidate portable build",
+      "timeout_seconds": 180,
+      "retries": 0,
+      "seed": {
+        "command": [
+          "node",
+          "upgrade_adapter.mjs",
+          "--mode",
+          "seed",
+          "--source-exe",
+          "{previous_artifact}",
+          "--profile",
+          "{profile}",
+          "--evidence",
+          "{evidence}"
+        ]
+      },
+      "verify": {
+        "command": [
+          "node",
+          "upgrade_adapter.mjs",
+          "--mode",
+          "verify",
+          "--source-exe",
+          "{candidate_artifact}",
+          "--profile",
+          "{profile}",
+          "--evidence",
+          "{evidence}"
+        ]
+      },
+      "assertions": [
+        { "path": "passed", "op": "equals", "value": true },
+        { "path": "ui.passed", "op": "equals", "value": true },
+        { "path": "semantic_comparison.passed", "op": "equals", "value": true }
+      ]
+    }
+  ]
+}

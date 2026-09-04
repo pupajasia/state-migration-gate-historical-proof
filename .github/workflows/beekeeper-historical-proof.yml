@@ -1,0 +1,88 @@
+name: Beekeeper historical state-gate proof
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  historical-proof:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install adapter dependency without package scripts
+        working-directory: adapters/beekeeper
+        run: npm install --ignore-scripts --no-package-lock --no-audit --no-fund
+
+      - name: Resolve immutable v5.8.1 artifact
+        shell: pwsh
+        run: |
+          python .\github_release_artifact.py `
+            --repo beekeeper-studio/beekeeper-studio `
+            --release v5.8.1 `
+            --name Beekeeper-Studio-5.8.1-portable.exe `
+            --sha256 b3d4291008604519e29b7405557029f30ed49b0eaf0b53e8f9df7ffde9eaf92e `
+            --download `
+            --output .state-gate-artifacts\v5.8.1 `
+            --receipt .state-gate-artifacts\v5.8.1.json
+
+      - name: Resolve immutable v5.9.0 artifact
+        shell: pwsh
+        run: |
+          python .\github_release_artifact.py `
+            --repo beekeeper-studio/beekeeper-studio `
+            --release v5.9.0 `
+            --name Beekeeper-Studio-5.9.0-portable.exe `
+            --sha256 541dde78e10544ac60c9ab21a18f2ff5f8bfc6b85a6195bd1584d0f503823240 `
+            --download `
+            --output .state-gate-artifacts\v5.9.0 `
+            --receipt .state-gate-artifacts\v5.9.0.json
+
+      - name: Confirm the pre-fix same-version control is blocked
+        shell: pwsh
+        run: |
+          $oldArtifact = (Resolve-Path -LiteralPath '.state-gate-artifacts\v5.8.1\Beekeeper-Studio-5.8.1-portable.exe').Path
+          python .\state_gate.py `
+            --config .\adapters\beekeeper\state-gate.beekeeper.example.json `
+            --output .\historical-evidence\control `
+            --var "previous_artifact=$oldArtifact" `
+            --var "candidate_artifact=$oldArtifact"
+          if ($LASTEXITCODE -ne 1) {
+            throw "Expected semantic block (exit 1), received $LASTEXITCODE"
+          }
+
+      - name: Confirm v5.8.1 to v5.9.0 preserves the edited query
+        shell: pwsh
+        run: |
+          $oldArtifact = (Resolve-Path -LiteralPath '.state-gate-artifacts\v5.8.1\Beekeeper-Studio-5.8.1-portable.exe').Path
+          $fixedArtifact = (Resolve-Path -LiteralPath '.state-gate-artifacts\v5.9.0\Beekeeper-Studio-5.9.0-portable.exe').Path
+          python .\state_gate.py `
+            --config .\adapters\beekeeper\state-gate.beekeeper.example.json `
+            --output .\historical-evidence\fixed `
+            --var "previous_artifact=$oldArtifact" `
+            --var "candidate_artifact=$fixedArtifact"
+
+      - name: Retain receipts, logs, JSON witnesses and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beekeeper-historical-state-gate-evidence
+          path: |
+            .state-gate-artifacts/*.json
+            historical-evidence/**
+          if-no-files-found: error
+          retention-days: 14
