@@ -207,7 +207,10 @@ async function launchPortable(playwright, activeExecutable, applicationDirectory
   child.stdout?.resume();
   child.stderr?.resume();
   try {
-    const endpoint = await waitForCdp(port, child, 45_000);
+    // GitHub-hosted Windows runners occasionally need more than 45 seconds to
+    // unpack the 200+ MB portable wrapper. This remains below the enclosing
+    // 180-second path timeout and changes no state assertion.
+    const endpoint = await waitForCdp(port, child, 90_000);
     const browser = await playwright.chromium.connectOverCDP(endpoint, { timeout: 45_000 });
     const context = browser.contexts()[0];
     if (!context) throw new Error('portable application exposed no browser context');
