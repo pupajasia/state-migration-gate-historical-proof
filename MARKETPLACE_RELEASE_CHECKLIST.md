@@ -25,9 +25,11 @@ public state or create legal/commercial commitments.
 - [ ] Enable GitHub private vulnerability reporting or nominate a private
       security contact before inviting broad use.
 - [ ] Confirm the Marketplace name remains available immediately before release.
+- [ ] Select `Testing` and `Continuous integration` as Marketplace categories if
+      both are available at release time.
 - [ ] Approve and create an immutable `v1.0.0` tag/release.
 - [ ] Accept the current GitHub Marketplace terms and publish the action.
-- [ ] Approve any LinkedIn Service Page or technical launch post separately.
+- [ ] Approve any LinkedIn Service Page or Product Hunt launch separately.
 
 ## Commercial gates — before accepting an order or payment
 

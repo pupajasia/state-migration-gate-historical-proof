@@ -1,6 +1,6 @@
 # Desktop Upgrade State Gate
 
-Desktop applications can launch successfully after an upgrade while silently
+Electron and other Windows desktop applications can launch successfully after an upgrade while silently
 changing, orphaning or dropping persisted user state. Desktop Upgrade State
 Gate turns one old-version-to-candidate migration path into a blocking Windows
 CI check with retained evidence.
@@ -14,10 +14,11 @@ adapter:
 4. emits a small JSON witness of the state semantics that matter; and
 5. fails closed when the witness, process result or assertion is wrong.
 
-The reusable engine is free. The commercial hypothesis is a fixed-scope,
+The reusable engine is free. The commercial hypothesis starts with a fixed-scope
 founding integration pilot for teams that want their first real migration path
-implemented without building the adapter themselves. That hypothesis is not yet
-validated by paid customers.
+implemented without building the adapter themselves. A sustainable business
+would additionally require teams to pay for recurring adapter maintenance,
+release evidence and failure triage. Neither payment nor renewal is validated.
 
 ## Minimal workflow
 

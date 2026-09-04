@@ -1,5 +1,5 @@
 name: Desktop Upgrade State Gate
-description: Block a Windows desktop release when persisted state changes meaning across a packaged upgrade.
+description: Block Electron and Windows desktop releases when persisted state changes meaning across a packaged upgrade test.
 inputs:
   config:
     description: Repository-relative path to the versioned JSON state contract.
