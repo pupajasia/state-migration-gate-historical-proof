@@ -314,10 +314,9 @@ async function seedState(window, profile) {
   const addQuery = window.locator('#add-tab-group a.add-query');
   if (await addQuery.isVisible()) await addQuery.click();
 
-  const activeEditor = window.locator('.core-tabs > .tab-content > .tab-pane.active').getByRole('textbox');
-  const editor = (await activeEditor.count()) > 0
-    ? activeEditor.first()
-    : window.locator('#tab-0').getByRole('textbox');
+  const editor = window.locator(
+    '.core-tabs .tab-pane.active [role="textbox"]:visible, #tab-0 [role="textbox"]:visible'
+  ).first();
   await editor.waitFor({ state: 'visible', timeout: 30_000 });
   await editor.click();
   await editor.fill(SAVED_TEXT);
@@ -338,10 +337,13 @@ async function verifyState(window, fixtureName) {
   const recent = window.locator('.recent-connection-list').getByText(fixtureName, { exact: false }).first();
   await recent.waitFor({ state: 'visible', timeout: 20_000 });
   await recent.dblclick();
-  const activeEditor = window.locator('.core-tabs > .tab-content > .tab-pane.active').getByRole('textbox');
-  const editor = (await activeEditor.count()) > 0
-    ? activeEditor.first()
-    : window.locator('#tab-0').getByRole('textbox');
+  // Do not decide the fallback from an immediate count: opening a recent
+  // connection is asynchronous, so the production editor may not exist yet.
+  // This union waits for either the scoped production editor or the minimal
+  // synthetic fixture editor while excluding unrelated sidebar textboxes.
+  const editor = window.locator(
+    '.core-tabs .tab-pane.active [role="textbox"]:visible, #tab-0 [role="textbox"]:visible'
+  ).first();
   await editor.waitFor({ state: 'visible', timeout: 30_000 });
   await window.waitForTimeout(1500);
   const visibleText = (await editor.textContent()) || '';
