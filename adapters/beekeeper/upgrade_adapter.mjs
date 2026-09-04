@@ -299,7 +299,19 @@ async function seedState(window, profile) {
   await window.locator('#Database').fill(fixtureDatabase);
   await window.getByRole('button', { name: 'Connect' }).click();
 
-  const editor = window.locator('#tab-0').getByRole('textbox');
+  // Production releases seed and open a saved "Demo Query" on a fresh profile.
+  // Saving that tab updates the existing favorite directly and never opens the
+  // title modal. Create an explicit blank query first so this exercises the
+  // same new-saved-query path as the upstream regression test.
+  const querySurface = window.locator('#add-tab-group a.add-query, #tab-0 [role="textbox"]');
+  await querySurface.first().waitFor({ state: 'visible', timeout: 30_000 });
+  const addQuery = window.locator('#add-tab-group a.add-query');
+  if (await addQuery.isVisible()) await addQuery.click();
+
+  const activeEditor = window.locator('.tab-pane.active').getByRole('textbox');
+  const editor = (await activeEditor.count()) > 0
+    ? activeEditor.first()
+    : window.locator('#tab-0').getByRole('textbox');
   await editor.waitFor({ state: 'visible', timeout: 30_000 });
   await editor.click();
   await editor.fill(SAVED_TEXT);
@@ -320,7 +332,10 @@ async function verifyState(window, fixtureName) {
   const recent = window.locator('.recent-connection-list').getByText(fixtureName, { exact: false }).first();
   await recent.waitFor({ state: 'visible', timeout: 20_000 });
   await recent.dblclick();
-  const editor = window.locator('#tab-0').getByRole('textbox');
+  const activeEditor = window.locator('.tab-pane.active').getByRole('textbox');
+  const editor = (await activeEditor.count()) > 0
+    ? activeEditor.first()
+    : window.locator('#tab-0').getByRole('textbox');
   await editor.waitFor({ state: 'visible', timeout: 30_000 });
   await window.waitForTimeout(1500);
   const visibleText = (await editor.textContent()) || '';
@@ -387,6 +402,17 @@ async function run(args) {
       database: snapshot,
       screenshot: screenshotPath,
     };
+  } catch (error) {
+    if (window) {
+      const failureScreenshot = path.join(path.dirname(evidencePath), `${args.mode}-beekeeper-failure.png`);
+      try {
+        await window.screenshot({ path: failureScreenshot, fullPage: false });
+        if (error && typeof error === 'object') error.stateGateScreenshot = failureScreenshot;
+      } catch {
+        // Preserve the original adapter error when screenshot capture also fails.
+      }
+    }
+    throw error;
   } finally {
     await closeApplication(application);
   }
@@ -404,6 +430,7 @@ try {
     passed: false,
     mode: parsed?.mode || null,
     error: error instanceof Error ? error.message : String(error),
+    screenshot: error?.stateGateScreenshot || null,
   };
   if (parsed?.evidence) writeJsonAtomic(path.resolve(parsed.evidence), evidence);
   console.error(JSON.stringify(evidence));

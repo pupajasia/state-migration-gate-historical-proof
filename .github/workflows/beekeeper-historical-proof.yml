@@ -84,5 +84,7 @@ jobs:
           path: |
             .state-gate-artifacts/*.json
             historical-evidence/**
+            !historical-evidence/**/user-data/portable-application/Beekeeper-Studio.exe
+            !historical-evidence/**/user-data/portable-application/beekeeper_studio_data/plugins/**
           if-no-files-found: error
           retention-days: 14
