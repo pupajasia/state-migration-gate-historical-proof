@@ -98,6 +98,12 @@ function materializePortable(sourceExecutable, profile) {
   }
   const applicationDirectory = path.join(path.resolve(profile), 'portable-application');
   fs.mkdirSync(applicationDirectory, { recursive: true });
+  const applicationData = path.join(applicationDirectory, 'beekeeper_studio_data');
+  fs.mkdirSync(applicationData, { recursive: true });
+  const userConfig = path.join(applicationData, 'user.config.ini');
+  if (!fs.existsSync(userConfig)) {
+    fs.writeFileSync(userConfig, '[general]\ncheckForUpdatesDisabled = true\n', { flag: 'wx' });
+  }
   const activeExecutable = path.join(applicationDirectory, 'Beekeeper-Studio.exe');
   fs.copyFileSync(source, activeExecutable);
   return { activeExecutable, applicationDirectory };
@@ -308,7 +314,7 @@ async function seedState(window, profile) {
   const addQuery = window.locator('#add-tab-group a.add-query');
   if (await addQuery.isVisible()) await addQuery.click();
 
-  const activeEditor = window.locator('.tab-pane.active').getByRole('textbox');
+  const activeEditor = window.locator('.core-tabs > .tab-content > .tab-pane.active').getByRole('textbox');
   const editor = (await activeEditor.count()) > 0
     ? activeEditor.first()
     : window.locator('#tab-0').getByRole('textbox');
@@ -332,7 +338,7 @@ async function verifyState(window, fixtureName) {
   const recent = window.locator('.recent-connection-list').getByText(fixtureName, { exact: false }).first();
   await recent.waitFor({ state: 'visible', timeout: 20_000 });
   await recent.dblclick();
-  const activeEditor = window.locator('.tab-pane.active').getByRole('textbox');
+  const activeEditor = window.locator('.core-tabs > .tab-content > .tab-pane.active').getByRole('textbox');
   const editor = (await activeEditor.count()) > 0
     ? activeEditor.first()
     : window.locator('#tab-0').getByRole('textbox');
