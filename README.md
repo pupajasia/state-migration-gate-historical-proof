@@ -157,11 +157,15 @@ operationally entitled to test.
 
 ## Voluntary pilot interest
 
-Teams may voluntarily open the **Founding pilot interest** issue form with only
-non-confidential details. This is a request for a scoped discussion, not an
-order. The current test offer is one Windows old-to-candidate path for EUR 149
-net, subject to written scope, business/tax readiness and acceptance before any
-payment. No unsolicited sales email is part of the launch plan.
+Teams may voluntarily open the
+[**Founding pilot interest**](https://github.com/pupajasia/state-migration-gate-historical-proof/issues/new?template=founding-pilot-interest.yml)
+issue form with only non-confidential details. This is a request for a scoped
+discussion, not an order. The repository owner first checks one concrete
+version path, packaging type and three to six state meanings; no private binary
+or customer data belongs in the issue. The current test offer is one Windows
+old-to-candidate path for EUR 149 net, subject to written scope, business/tax
+readiness and acceptance before any payment. No unsolicited sales email is part
+of the launch plan.
 
 ## Current maturity
 
