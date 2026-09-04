@@ -101,5 +101,6 @@ jobs:
         with:
           name: marketplace-package-smoke-evidence
           path: .state-gate-results
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
