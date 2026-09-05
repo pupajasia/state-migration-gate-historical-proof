@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import pathlib
+import re
 import tempfile
 import unittest
 
@@ -125,6 +126,31 @@ class ActionPreflightTests(unittest.TestCase):
         values["previous_release"] = "v1"
         with self.assertRaisesRegex(PreflightError, "only valid with previous-repo"):
             preflight(values)
+
+
+class ReleaseDocumentationTests(unittest.TestCase):
+    def test_hidden_evidence_upload_is_enabled_in_examples(self) -> None:
+        repository = pathlib.Path(__file__).resolve().parent
+        pattern = re.compile(
+            r"path:\s+\.state-gate-results\s+include-hidden-files:\s+true",
+            re.MULTILINE,
+        )
+        for relative in (
+            pathlib.Path("README.md"),
+            pathlib.Path(".github/workflows/marketplace-package-smoke.yml"),
+        ):
+            with self.subTest(file=str(relative)):
+                text = (repository / relative).read_text(encoding="utf-8")
+                self.assertRegex(text, pattern)
+
+    def test_readme_uses_the_first_immutable_release_tag(self) -> None:
+        repository = pathlib.Path(__file__).resolve().parent
+        readme = (repository / "README.md").read_text(encoding="utf-8")
+        self.assertIn(
+            "uses: pupajasia/state-migration-gate-historical-proof@v0.1.0",
+            readme,
+        )
+        self.assertNotIn("@RELEASE_TAG", readme)
 
 
 if __name__ == "__main__":

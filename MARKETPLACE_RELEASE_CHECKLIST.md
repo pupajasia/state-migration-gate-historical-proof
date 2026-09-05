@@ -13,9 +13,13 @@ public state or create legal/commercial commitments.
 - [x] Standard-library unit tests cover action preflight and executable evidence.
 - [x] Python and Node sources pass syntax checks.
 - [x] A Windows workflow exercises the action through `uses: ./`.
-- [ ] GitHub parses the metadata and the Windows package workflow passes on the
-      exact commit intended for release.
-- [ ] Repository owner selects and adds an explicit software license.
+- [ ] GitHub parses the metadata and the corrected Windows package workflow,
+      including hidden evidence retention, passes on the exact commit intended
+      for release. The latest public package smoke passed at `fc99938`; the
+      final release commit and tag still need their own green runs.
+- [x] Repository owner selected MIT and added exact licensor `Kevin Kober`.
+- [x] GitHub private vulnerability reporting is enabled and `SECURITY.md` points
+      reporters to that private channel without publishing a personal address.
 - [x] Add and maintain a third-party notice for referenced dependencies and test
       targets; do not bundle third-party application binaries, source, icons or
       plugins.
@@ -24,17 +28,20 @@ public state or create legal/commercial commitments.
 
 ## Public-state gates — owner approval required
 
-- [ ] Approve pushing the release-candidate branch.
-- [ ] Review all public wording, the EUR 149 test offer and the voluntary issue
+- [x] Owner authorized the remaining staged technical publication steps, but no
+      email, direct-message or paid-account action.
+- [ ] Review all public wording, the EUR 149 price hypothesis and voluntary issue
       form.
-- [ ] Enable GitHub private vulnerability reporting or nominate a private
-      security contact before inviting broad use.
+- [x] Enable GitHub private vulnerability reporting before publishing the
+      security policy.
 - [ ] Confirm the Marketplace name remains available immediately before release.
 - [ ] Select `Testing` and `Continuous integration` as Marketplace categories if
       both are available at release time.
-- [ ] Approve and create an immutable `v1.0.0` tag/release.
+- [ ] Create and verify the first immutable `v0.1.0` tag/release.
 - [ ] Accept the current GitHub Marketplace terms and publish the action.
 - [ ] Approve any LinkedIn Service Page or Product Hunt launch separately.
+- [ ] Approve any Upwork profile, Project Catalog listing, proposal or Connect
+      spend separately.
 
 ## Commercial gates — before accepting an order or payment
 
@@ -42,8 +49,11 @@ public state or create legal/commercial commitments.
       scope confirmation and invoice.
 - [ ] Confirm German business-registration and tax treatment with the relevant
       authority or qualified adviser.
+- [ ] Publish a compliant provider notice with legal name, service address and
+      business email before accepting payment or adding a checkout.
 - [ ] Confirm invoice wording, VAT treatment and a permitted SEPA account.
-- [ ] Keep the first offer to at most three EUR 149-net founding pilots.
+- [ ] Keep the first offer to at most three EUR 149 price-test founding pilots;
+      confirm the final invoice total and tax treatment before acceptance.
 - [ ] Record opt-in source, scope, price acceptance, payment and acceptance result.
 
 The project is not commercially validated until two independent teams have paid

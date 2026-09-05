@@ -7,12 +7,44 @@ body:
   - type: markdown
     attributes:
       value: |
-        This public form is an opt-in request for discussion, not an order. Share only non-confidential details. The current test price is EUR 149 net for one tightly scoped Windows old-to-candidate path, subject to written scope and acceptance before payment.
+        This public form is an opt-in request for discussion, not an order. Share only non-confidential details. The price signal being tested is EUR 149 for one tightly scoped Windows old-to-candidate path. Scope, tax treatment and the final invoice amount must be confirmed in writing before payment.
   - type: input
     id: product
     attributes:
       label: Public product or project
       description: A public repository or product page is enough; do not attach binaries.
+    validations:
+      required: true
+  - type: dropdown
+    id: team
+    attributes:
+      label: Team and product type
+      description: The founding pilot is for a real commercial desktop release, not a hobby fixture.
+      options:
+        - Commercial paid desktop product
+        - Commercial internal desktop product
+        - Open-source or non-commercial project
+        - Individual or hobby project
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Release and budget role
+      options:
+        - I can approve the release test and its budget
+        - I can introduce the release or budget owner
+        - I am exploring without an internal sponsor
+    validations:
+      required: true
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Desktop framework
+      options:
+        - Electron
+        - Tauri
+        - Other or unknown
     validations:
       required: true
   - type: dropdown
@@ -34,6 +66,14 @@ body:
       placeholder: v1.8.4 to the next candidate
     validations:
       required: true
+  - type: checkboxes
+    id: artifacts
+    attributes:
+      label: Disposable test artifacts
+      description: Do not attach binaries or private links to this public issue.
+      options:
+        - label: Both Windows-x64 builds can later be made available in a buyer-controlled disposable test environment without production secrets or customer data.
+          required: true
   - type: textarea
     id: semantics
     attributes:
@@ -47,9 +87,31 @@ body:
       label: Pilot price test
       description: This records price fit only; it does not create a purchase.
       options:
-        - EUR 149 net is acceptable if scope fits
+        - EUR 149 is acceptable subject to confirmed scope and tax treatment
         - I need a scope discussion before deciding
         - This price is not acceptable
+    validations:
+      required: true
+  - type: dropdown
+    id: ai
+    attributes:
+      label: Disclosed Codex-assisted workflow
+      description: This public answer covers the workflow in principle; any non-public AI processing requires a separate explicit agreement before work.
+      options:
+        - Codex-assisted test preparation and minimized evidence analysis is allowed
+        - I need an internal AI-policy review before deciding
+        - AI-assisted delivery is not allowed
+    validations:
+      required: true
+  - type: dropdown
+    id: ip
+    attributes:
+      label: Reusable technology boundary
+      description: The pilot buys one scoped diagnostic result; it does not buy exclusive ownership of the public engine or generalized improvements.
+      options:
+        - I understand the reusable engine remains separately licensed and non-exclusive
+        - I need an internal IP review before deciding
+        - I require exclusive ownership of the reusable engine
     validations:
       required: true
   - type: checkboxes

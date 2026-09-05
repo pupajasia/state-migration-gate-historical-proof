@@ -22,8 +22,8 @@ release evidence and failure triage. Neither payment nor renewal is validated.
 
 ## Minimal workflow
 
-This unreleased example shows the intended interface. Replace the placeholder
-tag with a published immutable release tag only after one exists.
+This example pins the first technical public-beta line. For the strongest
+supply-chain pin, replace the tag with the full commit SHA from the release.
 
 ```yaml
 name: Desktop migration gate
@@ -50,7 +50,7 @@ jobs:
 
       - name: Prove retained state semantics
         id: state_gate
-        uses: pupajasia/state-migration-gate-historical-proof@RELEASE_TAG
+        uses: pupajasia/state-migration-gate-historical-proof@v0.1.0
         with:
           config: state-gate.json
           previous-repo: your-org/your-desktop-app
@@ -65,6 +65,7 @@ jobs:
         with:
           name: state-migration-evidence
           path: .state-gate-results
+          include-hidden-files: true
 ```
 
 The previous artifact can instead be a repository file supplied through
@@ -162,14 +163,15 @@ Teams may voluntarily open the
 issue form with only non-confidential details. This is a request for a scoped
 discussion, not an order. The repository owner first checks one concrete
 version path, packaging type and three to six state meanings; no private binary
-or customer data belongs in the issue. The current test offer is one Windows
-old-to-candidate path for EUR 149 net, subject to written scope, business/tax
-readiness and acceptance before any payment. No unsolicited sales email is part
-of the launch plan.
+or customer data belongs in the issue. The price signal being tested is EUR 149
+for one Windows old-to-candidate path. The form neither creates an order nor
+fixes an invoice amount; scope, tax treatment and the final price must be
+confirmed in writing after business readiness and before any payment. No
+unsolicited sales email is part of the launch plan.
 
 ## Current maturity
 
-The engine and historical proof work. The composite Marketplace package is a
-local release candidate until its Windows workflow passes from a pushed tag and
-the repository owner completes the publication checklist. It should not yet be
-described as a generally available or commercially validated product.
+The engine and historical proof work. The `v0.1.0` line is a technical public
+beta once its pushed-tag Windows workflow passes. It is not a managed service,
+a checkout or a commercially validated product. Paid work must not be accepted
+until the business, legal, tax, invoicing and payment gates are complete.
